@@ -58,10 +58,11 @@ player.on('song added', function() {
 ## Methods
 ### `add(url [, metadata])`
 Adds the mp3 stream located at `url` to the queue. The optional metadata parameter can be any JS object that holds information about the song. If no metadata is given then it will be `undefined` when referenced.
-### `play()`
-Starts playing the next song in the queue out of the speakers.
+### `play([seconds])`
+Starts playing the next song in the queue out of the speakers. The optional seconds parameter specifies at what time (in seconds) the music should pick up at.
 `throws new Error('A song is already playing.')`
 `throws new Error('The queue is empty.')`
+`throws any error created by the packages fs or musicmetadata while gathering stats/metadata`
 ### `pause()`
 Pause the current playing sound. Call `play()` to resume.
 ### `getQueue()`

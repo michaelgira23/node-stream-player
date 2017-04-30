@@ -99,6 +99,10 @@ class StreamPlayer extends events.EventEmitter
               throw err
             stream.close()
             startBytes = (seconds / metadata.duration) * stats.size
+            if startBytes < 0
+              startBytes = 0
+            if startBytes > 1
+              startBytes = stats.size
             callback(fs.createReadStream(url, {start: startBytes}))
           )
         )
