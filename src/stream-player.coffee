@@ -3,6 +3,7 @@ lame = require('lame')
 request = require('request')
 events = require('events')
 fs = require('fs')
+mm = require('musicmetadata')
 
 audioOptions = {
   channels: 2,
@@ -28,16 +29,16 @@ class StreamPlayer extends events.EventEmitter
 
 
   # Play the next song in the queue if it exists
-  play: () ->
+  play: (seconds) ->
+    if @playing
+      return new Error('A song is already playing.');
     if @currentSong != null
       @resume()
-    else if @queue.length > 0 && !@playing
-      @getStream(@queue[0], @playStream)
+    else if @queue.length > 0
+      @getStream(@queue[0], seconds, @playStream)
       @playing = true
       @queue.shift()
       @currentSong = self.trackInfo.shift()
-    else if @playing
-      return new Error('A song is already playing.')
     else
       return new Error('The queue is empty.')
 
@@ -84,10 +85,23 @@ class StreamPlayer extends events.EventEmitter
     return @trackInfo
 
   # Get the audio stream
-  getStream: (url, callback) ->
+  getStream: (url, seconds = 0, callback) ->
     if 'http' not in url
-      stream = fs.createReadStream(url)
-      callback(stream)
+      if not seconds
+        callback(fs.createReadStream(url))
+      else
+        fs.stat(url, (err, stats) ->
+          if err
+            throw err
+          stream = fs.createReadStream(url)
+          mm(stream, { duration: true }, (err, metadata) ->
+            if err
+              throw err
+            stream.close()
+            startBytes = (seconds / metadata.duration) * stats.size
+            callback(fs.createReadStream(url, {start: startBytes}))
+          )
+        )
     else
       request.get(url).on 'response', (res) ->
         if res.headers['content-type'] == 'audio/mpeg'
